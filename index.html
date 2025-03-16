@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gran Rifa de un Pato</title>
+    <script type="module">
+        // Importar las funciones necesarias del SDK de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-analytics.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+        
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "rifadelpato.firebaseapp.com",
+            projectId: "rifadelpato",
+            storageBucket: "rifadelpato.firebasestorage.app",
+            messagingSenderId: "391583088607",
+            appId: "1:391583088607:web:4842c8f4493915b98f0e6a",
+            measurementId: "G-4QBX2ZB5TY"
+        };
+        
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getFirestore(app);
+        
+        // Cargar boletos desde Firestore
+        async function cargarBoletos() {
+            const boletosContainer = document.getElementById("boletosContainer");
+            boletosContainer.innerHTML = "";
+            
+            for (let i = 1; i <= 40; i++) {
+                let boleto = document.createElement("div");
+                boleto.classList.add("boleto");
+                boleto.textContent = i;
+                
+                const docRef = doc(db, "boletos", String(i));
+                const docSnap = await getDoc(docRef);
+                
+                if (docSnap.exists() && docSnap.data().vendido) {
+                    boleto.classList.add("vendido");
+                    // (Opcional) Muestra el nombre del comprador
+                    if (docSnap.data().comprador) {
+                        boleto.title = "Comprado por: " + docSnap.data().comprador;
+                    }
+                } else {
+                    boleto.classList.add("disponible");
+                    boleto.addEventListener("click", () => comprarBoleto(i));
+                }
+                boletosContainer.appendChild(boleto);
+            }
+        }
+        
+        // Comprar boleto
+        async function comprarBoleto(numero) {
+            // 1. Pedir el nombre al usuario
+            const nombre = prompt("Ingresa tu nombre para el boleto " + numero + ":");
+            if (!nombre) {
+                // Si no ingresan nombre, no hacemos nada
+                return;
+            }
+
+            const docRef = doc(db, "boletos", String(numero));
+            const docSnap = await getDoc(docRef);
+
+            if (!docSnap.exists() || !docSnap.data().vendido) {
+                // 2. Guardar "vendido: true" y el nombre del comprador
+                await setDoc(docRef, {
+                    vendido: true,
+                    comprador: nombre
+                });
+                alert("Boleto " + numero + " comprado con éxito por " + nombre);
+                cargarBoletos();
+            } else {
+                alert("Este boleto ya ha sido vendido.");
+            }
+        }
+        
+        document.addEventListener("DOMContentLoaded", cargarBoletos);
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1 {
+            color: #ff9800;
+        }
+        .boletos {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .boleto {
+            padding: 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .disponible {
+            background: #4CAF50;
+            color: white;
+        }
+        .vendido {
+            background: #e74c3c;
+            color: white;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gran Rifa de un Pato</h1>
+        <img src="pata.JPG" alt="Gran Rifa de un Pato" style="max-width: 30%; border-radius: 10px;">
+
+        <div class="raffle-info">
+            <p>¡Participa y gana un pato!</p>
+            <p><strong>Fecha del sorteo:</strong> Sábado 26 de abril de 2025 a las 18:00</p>
+            <p><strong>Valor del boleto:</strong> $1 Dólar</p>
+        </div>
+        <h2>Selecciona un boleto</h2>
+        <div class="boletos" id="boletosContainer"></div>
+        <div class="footer">
+            Para más información, visita:
+            <a href="https://github.com/equipzo/RifaDePato.git">https://github.com/equipzo/RifaDePato.git</a>
+        </div>
+    </div>
+</body>
+</html>
